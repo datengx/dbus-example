@@ -1,9 +1,10 @@
-TARGETS=readline_simple readline_completion
+TARGETS=ndnbt_cmd
 CC=gcc
-CCOPTS=-Wall -Wextra -Wunused-parameter
+CXX=g++
+CCOPTS=-Wall -Wextra -Wunused-parameter -fpermissive
 .PHONY: all clean
 
-DEP_OBJECT = gdbus/mainloop.o gdbus/client.o gdbus/object.o gdbus/polkit.o gdbus/watch.o
+DEP_OBJECT = gdbus/mainloop.o gdbus/client.o gdbus/object.o gdbus/polkit.o gdbus/watch.o client/agent.o client/gatt.o client/display.o monitor/uuid.o bin/cmd_emulate.o
 client_bluetoothctl_SOURCES_DIST = client/display.c client/agent.c \
 																		client/gatt.c monitor/uuid.c
 
@@ -42,12 +43,33 @@ gdbus/watch.o:
 	gcc -O $(CCOPTS) $(INC) -c ./gdbus/watch.c
 	mv watch.o gdbus/watch.o
 
+client/agent.o:
+	gcc -O $(CCOPTS) $(INC) -c ./client/agent.c
+	mv ./*.o client/agent.o
+
+client/gatt.o:
+	gcc -O $(CCOPTS) $(INC) -c ./client/gatt.c
+	mv ./*.o client/gatt.o
+
+client/diaplay.o:
+	gcc -O $(CCOPTS) $(INC) -c ./client/display.c
+	mv ./*.o client/display.o
+
+monitor/uuid.o:
+	gcc -O $(CCOPTS) $(INC) -c ./monitor/uuid.c
+	mv ./uuid.o monitor/uuid.o
+
+bin/cmd_emulate.o:
+	gcc -O $(CCOPTS) $(INC) -c cmd_emulate.c
+	mv ./cmd_emulate.o ./bin/cmd_emulate.o
+
 destroy_bin:
 	rm -rf ./bin
+
 
 create_bin:
 	mkdir bin
 
-%: %.c
-	$(CC) $(CCOPTS) $(INC) -o $@ $< $(client_bluetoothctl_SOURCES_DIST) $(DEP_OBJECT) $(LIBS)
+ndnbt_cmd: ndnbt_cmd.cxx client/agent.o client/gatt.o client/display.o monitor/uuid.o bin/cmd_emulate.o
+	$(CXX) $(CCOPTS) $(INC) -o $@ $< $(DEP_OBJECT) $(LIBS)
 	mv $@ ./bin

@@ -1,32 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdbool.h>
-#include <signal.h>
-#include <sys/signalfd.h>
-#include <readline/readline.h>
-#include <readline/history.h>
-
-#include <glib.h>
-#include <dbus/dbus.h>
-#include "gdbus/gdbus.h"
-#include "signal-def.h"
-
-/* String display constants */
-#define COLORED_NEW	"NEW"
-#define COLORED_CHG	"CHG"
-#define COLORED_DEL	"DEL"
-
-#define PROMPT_ON	"[Test readline]# "
-#define PROMPT_OFF	"[Test readline]# "
-
-
-
-static GMainLoop *main_loop;
-static DBusConnection *dbus_conn;
-static guint input = 0;
-static GDBusProxy *agent_manager;
+#include "cmd_emulate.h"
 
 static GDBusProxy *default_ctrl;
 static GDBusProxy *default_dev;
@@ -35,8 +7,7 @@ static GList *ctrl_list;
 static GList *dev_list;
 
 static char *auto_register_agent = NULL;
-char **character_name_completion(const char *, int, int);
-char *character_name_generator(const char *, int);
+
 
 const char* g_signals[] = {
   "quit"
@@ -50,7 +21,7 @@ char *character_names[] = {
     NULL
 };
 
-static void rl_handler(char *in)
+void rl_handler(char *in)
 {
   printf("You just entered\n");
   printf("%s\n", in);
@@ -60,9 +31,13 @@ static void rl_handler(char *in)
     // rage quit!
     exit(-2);
   }
+
+
+  // Add the code for ndn
+
 }
 
-static gboolean service_is_child(GDBusProxy *service)
+gboolean service_is_child(GDBusProxy *service)
 {
 	GList *l;
 	DBusMessageIter iter;
@@ -85,7 +60,7 @@ static gboolean service_is_child(GDBusProxy *service)
 	return FALSE;
 }
 
-static gboolean device_is_child(GDBusProxy *device, GDBusProxy *master)
+gboolean device_is_child(GDBusProxy *device, GDBusProxy *master)
 {
 	DBusMessageIter iter;
 	const char *adapter, *path;
@@ -105,7 +80,7 @@ static gboolean device_is_child(GDBusProxy *device, GDBusProxy *master)
 	return FALSE;
 }
 
-static void print_iter(const char *label, const char *name,
+void print_iter(const char *label, const char *name,
 						DBusMessageIter *iter)
 {
 	dbus_bool_t valbool;
@@ -181,7 +156,7 @@ static void print_iter(const char *label, const char *name,
 	}
 }
 
-static void set_default_device(GDBusProxy *proxy, const char *attribute)
+void set_default_device(GDBusProxy *proxy, const char *attribute)
 {
 	char *desc = NULL;
 	DBusMessageIter iter;
@@ -214,7 +189,7 @@ done:
 	g_free(desc);
 }
 
-static void set_default_attribute(GDBusProxy *proxy)
+void set_default_attribute(GDBusProxy *proxy)
 {
 	const char *path;
 
@@ -224,7 +199,7 @@ static void set_default_attribute(GDBusProxy *proxy)
 
 	set_default_device(default_dev, path);
 }
-static void print_adapter(GDBusProxy *proxy, const char *description)
+void print_adapter(GDBusProxy *proxy, const char *description)
 {
 	DBusMessageIter iter;
 	const char *address, *name;
@@ -248,7 +223,7 @@ static void print_adapter(GDBusProxy *proxy, const char *description)
 
 }
 
-static void print_device(GDBusProxy *proxy, const char *description)
+void print_device(GDBusProxy *proxy, const char *description)
 {
 	DBusMessageIter iter;
 	const char *address, *name;
@@ -270,7 +245,7 @@ static void print_device(GDBusProxy *proxy, const char *description)
 				address, name);
 }
 
-static void connect_handler(DBusConnection *connection, void *user_data)
+void connect_handler(DBusConnection *connection, void *user_data)
 {
 	rl_set_prompt(PROMPT_ON);
 	printf("\r");
@@ -278,7 +253,7 @@ static void connect_handler(DBusConnection *connection, void *user_data)
 	rl_redisplay();
 }
 
-static void disconnect_handler(DBusConnection *connection, void *user_data)
+void disconnect_handler(DBusConnection *connection, void *user_data)
 {
 	rl_set_prompt(PROMPT_OFF);
 	printf("\r");
@@ -294,7 +269,7 @@ static void disconnect_handler(DBusConnection *connection, void *user_data)
 	dev_list = NULL;
 }
 
-static void proxy_added(GDBusProxy *proxy, void *user_data)
+void proxy_added(GDBusProxy *proxy, void *user_data)
 {
 	const char *interface;
 
@@ -333,7 +308,7 @@ static void proxy_added(GDBusProxy *proxy, void *user_data)
 	}
 }
 
-static gboolean signal_handler(GIOChannel *channel, GIOCondition condition,
+gboolean signal_handler(GIOChannel *channel, GIOCondition condition,
 							gpointer user_data)
 {
   printf("signal_handler\n");
@@ -383,7 +358,7 @@ static gboolean signal_handler(GIOChannel *channel, GIOCondition condition,
 	return TRUE;
 }
 
-static gboolean input_handler(GIOChannel *channel, GIOCondition condition,
+gboolean input_handler(GIOChannel *channel, GIOCondition condition,
 							gpointer user_data)
 {
 	if (condition & G_IO_IN) {
@@ -399,7 +374,7 @@ static gboolean input_handler(GIOChannel *channel, GIOCondition condition,
 	return TRUE;
 }
 
-static guint setup_signalfd(void)
+guint setup_signalfd(void)
 {
 	GIOChannel *channel;
 	guint source;
@@ -436,7 +411,7 @@ static guint setup_signalfd(void)
 	return source;
 }
 
-static guint setup_standard_input(void)
+guint setup_standard_input(void)
 {
 	GIOChannel *channel;
 	guint source;
@@ -452,21 +427,21 @@ static guint setup_standard_input(void)
 	return source;
 }
 
-static void client_ready(GDBusClient *client, void *user_data)
+void client_ready(GDBusClient *client, void *user_data)
 {
 	guint *input = user_data;
 
 	*input = setup_standard_input();
 }
 
-static void message_handler(DBusConnection *connection,
+void message_handler(DBusConnection *connection,
 					DBusMessage *message, void *user_data)
 {
 	rl_printf("[SIGNAL] %s.%s\n", dbus_message_get_interface(message),
 					dbus_message_get_member(message));
 }
 
-static void proxy_removed(GDBusProxy *proxy, void *user_data)
+void proxy_removed(GDBusProxy *proxy, void *user_data)
 {
 	const char *interface;
 
@@ -519,7 +494,7 @@ static void proxy_removed(GDBusProxy *proxy, void *user_data)
 	}
 }
 
-static void property_changed(GDBusProxy *proxy, const char *name,
+void property_changed(GDBusProxy *proxy, const char *name,
 					DBusMessageIter *iter, void *user_data)
 {
 	const char *interface;
@@ -582,66 +557,6 @@ static void property_changed(GDBusProxy *proxy, const char *name,
 		g_free(str);
 	}
 }
-
-
-
-int
-main(int argc, char *argv[])
-{
-
-    guint signal;
-
-    main_loop = g_main_loop_new(NULL, FALSE);
-    dbus_conn = g_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, NULL);
-    GDBusClient *client;
-
-    // each time TAB key is hit, the function assigned to
-    // rl_attempted_completion_function will be called
-    rl_attempted_completion_function = character_name_completion;
-
-    printf("Who's your favourite Hitchiker's Guide character?\n");
-    //char *buffer = readline("> ");
-    //if (buffer) {
-    //    printf("You entered: %s\n", buffer);
-    //    free(buffer);
-    //}
-
-    // @@ using callback behavior
-    rl_erase_empty_line = 1;
-	  rl_callback_handler_install(NULL, rl_handler);
-    rl_set_prompt(PROMPT_OFF);
-	  rl_redisplay();
-
-    signal = setup_signalfd();
-    client = g_dbus_client_new(dbus_conn, "org.bluez", "/org/bluez");
-
-    g_dbus_client_set_connect_watch(client, connect_handler, NULL);
-	  g_dbus_client_set_disconnect_watch(client, disconnect_handler, NULL);
-	  g_dbus_client_set_signal_watch(client, message_handler, NULL);
-
-	  g_dbus_client_set_proxy_handlers(client, proxy_added, proxy_removed,
-							property_changed, NULL);
-
-	  input = 0;
-	  g_dbus_client_set_ready_watch(client, client_ready, &input);
-
-
-
-    rl_on_new_line();
-    rl_redisplay();
-    g_main_loop_run(main_loop);
-
-    g_source_remove(signal);
-
-    rl_message("");
-	  rl_callback_handler_remove();
-
-    g_main_loop_unref(main_loop);
-
-    return 0;
-}
-
-
 
 char **
 character_name_completion(const char *text, int start, int end)
