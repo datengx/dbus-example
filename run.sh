@@ -1,0 +1,1 @@
+./bin/readline_completion
