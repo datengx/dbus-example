@@ -1,12 +1,35 @@
 #include <iostream>
 extern "C" {
-#include "cmd_emulate.h"
+#include "cmd_emulate/cmd_emulate.h"
 }
 
 extern GMainLoop *main_loop;
 extern DBusConnection *dbus_conn;
 extern guint input;
 extern GDBusProxy *agent_manager;
+
+const char* g_signals[] = {
+  "quit"
+};
+
+/**
+ *  Input handler function for the interactive shell
+ */
+void rl_handler(char *in)
+{
+  printf("You just entered\n");
+  printf("%s\n", in);
+
+  // If it's the quit user signal
+  if (strcmp(in, g_signals[CMDLINE_SIG_QUIT]) == 0) {
+    // rage quit!
+    exit(-2);
+  }
+
+
+  // Add the code for ndn
+
+}
 
 int
 main(int argc, char *argv[])
@@ -21,13 +44,6 @@ main(int argc, char *argv[])
     // each time TAB key is hit, the function assigned to
     // rl_attempted_completion_function will be called
     rl_attempted_completion_function = character_name_completion;
-
-    printf("Who's your favourite Hitchiker's Guide character?\n");
-    //char *buffer = readline("> ");
-    //if (buffer) {
-    //    printf("You entered: %s\n", buffer);
-    //    free(buffer);
-    //}
 
     // @@ using callback behavior
     rl_erase_empty_line = 1;

@@ -15,7 +15,6 @@
 #include "gdbus/gdbus.h"
 
 #include "signal-def.h"
-#include "cmd_emulate.h"
 
 /* String display constants */
 #define COLORED_NEW	"NEW"

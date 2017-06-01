@@ -1,4 +1,4 @@
-#include "cmd_emulate.h"
+#include "cmd_emulate/cmd_emulate.h"
 
 static GDBusProxy *default_ctrl;
 static GDBusProxy *default_dev;
@@ -9,10 +9,7 @@ static GList *dev_list;
 static char *auto_register_agent = NULL;
 
 
-const char* g_signals[] = {
-  "quit"
-};
-
+// TODO: Add commandline completion tool
 char *character_names[] = {
     "Arthur Dent",
     "Ford Prefect",
@@ -21,21 +18,6 @@ char *character_names[] = {
     NULL
 };
 
-void rl_handler(char *in)
-{
-  printf("You just entered\n");
-  printf("%s\n", in);
-
-  // If it's the quit user signal
-  if (strcmp(in, g_signals[CMDLINE_SIG_QUIT]) == 0) {
-    // rage quit!
-    exit(-2);
-  }
-
-
-  // Add the code for ndn
-
-}
 
 gboolean service_is_child(GDBusProxy *service)
 {

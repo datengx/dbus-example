@@ -9,16 +9,22 @@ client_bluetoothctl_SOURCES_DIST = client/display.c client/agent.c \
 																		client/gatt.c monitor/uuid.c
 
 INC = -I/usr/include -I./ $(shell pkg-config --cflags dbus-glib-1) \
-                     $(shell pkg-config --cflags dbus-1)\
-		     $(shell pkg-config --cflags boost)\
-		     $(shell pkg-config --cflags glib-2.0)
+                     			$(shell pkg-config --cflags dbus-1)\
+		     									$(shell pkg-config --cflags glib-2.0)
+
+INCXX  =-std=c++11 $(shell pkg-config --cflags boost)\
+									 $(shell pkg-config --cflags libndn-cxx)
+
 
 # Object cli-pair depends on
 LIBS = $(shell pkg-config --libs dbus-glib-1) \
        $(shell pkg-config --libs dbus-1) \
        $(shell pkg-config --libs glib-2.0)\
-       $(shell pkg-config --libs boost)\
        -L/usr/local/lib -lreadline
+
+LIBSCXX =-std=c++11 $(shell pkg-config --libs boost)\
+										$(shell pkg-config --libs libndn-cxx)
+
 
 all: destroy_bin create_bin $(TARGETS)
 
@@ -60,7 +66,7 @@ monitor/uuid.o:
 	mv ./uuid.o monitor/uuid.o
 
 bin/cmd_emulate.o:
-	gcc -O $(CCOPTS) $(INC) -c cmd_emulate.c
+	gcc -O $(CCOPTS) $(INC) -c ./cmd_emulate/cmd_emulate.c
 	mv ./cmd_emulate.o ./bin/cmd_emulate.o
 
 destroy_bin:
@@ -71,5 +77,5 @@ create_bin:
 	mkdir bin
 
 ndnbt_cmd: ndnbt_cmd.cxx client/agent.o client/gatt.o client/display.o monitor/uuid.o bin/cmd_emulate.o
-	$(CXX) $(CCOPTS) $(INC) -o $@ $< $(DEP_OBJECT) $(LIBS)
+	$(CXX) $(CCOPTS) $(INCXX) $(INC) -o $@ $< $(DEP_OBJECT) $(LIBS) $(LIBSCXX)
 	mv $@ ./bin
