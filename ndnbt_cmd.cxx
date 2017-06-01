@@ -3,23 +3,78 @@ extern "C" {
 #include "cmd_emulate/cmd_emulate.h"
 }
 
+#include "endpoints/producer.hpp"
+
 extern GMainLoop *main_loop;
 extern DBusConnection *dbus_conn;
 extern guint input;
 extern GDBusProxy *agent_manager;
 
 const char* g_signals[] = {
-  "quit"
+  "quit",
+  "run_producer"
 };
+/*
+void WorkerThread( boost::shared_ptr< ndn::chunks::Producer > producer )
+{
+	std::cout << "Thread Start\n";
+	producer->run(ndn::time::milliseconds(1000));
+	std::cout << "Thread Finish\n";
+}
+*/
+/**
+ * Start the producer
+ */
+int
+run_producer()
+{
+  // parameter setup
+  bool printVersion = false;
+  uint64_t freshnessPeriod = 10000;
+  size_t maxChunkSize = ndn::MAX_NDN_PACKET_SIZE >> 1;
+  std::string signingStr;
+  bool isVerbose = false;
+  std::string prefix = "/ndn/hi";
+
+  ndn::security::SigningInfo signingInfo;
+  try {
+    signingInfo = ndn::security::SigningInfo(signingStr);
+  }
+  catch (const std::invalid_argument& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    return 2;
+  }
+
+  std::cout << "Initializing Producer!" << std::endl;
+
+  try {
+    ndn::Face face;
+    ndn::KeyChain keyChain;
+
+    ndn::chunks::Producer producer(prefix, face, keyChain, signingInfo, ndn::time::milliseconds(freshnessPeriod),
+                                   maxChunkSize, isVerbose, printVersion, std::cin);
+    std::cout << "Yeah! run that producer!" << std::endl;
+    // producer.run(ndn::time::milliseconds(-1));
+    //worker_threads.create_thread( boost::bind( &WorkerThread, producer ) );
+    producer.run(ndn::time::milliseconds(1000));
+    std::cout << "Producer stopped" << std::endl;
+  }
+  catch (const std::exception& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    return 1;
+  }
+  return 0;
+}
 
 /**
  *  Input handler function for the interactive shell
  */
-void rl_handler(char *in)
+void
+rl_handler(char *in)
 {
   printf("You just entered\n");
   printf("%s\n", in);
-
+  int err = 0;
   // If it's the quit user signal
   if (strcmp(in, g_signals[CMDLINE_SIG_QUIT]) == 0) {
     // rage quit!
@@ -28,9 +83,19 @@ void rl_handler(char *in)
 
 
   // Add the code for ndn
+  if (strcmp(in, g_signals[CMDLINE_SIG_RUN_PRODUCER]) == 0) {
+
+    err = run_producer();
+    std::cout << "run_producer Error: " << err << std::endl;
+  }
 
 }
 
+namespace ndn {
+
+namespace chunks {
+}
+}
 int
 main(int argc, char *argv[])
 {
@@ -78,4 +143,5 @@ main(int argc, char *argv[])
     g_main_loop_unref(main_loop);
 
     return 0;
+
 }

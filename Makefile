@@ -22,8 +22,8 @@ LIBS = $(shell pkg-config --libs dbus-glib-1) \
        $(shell pkg-config --libs glib-2.0)\
        -L/usr/local/lib -lreadline
 
-LIBSCXX =-std=c++11 $(shell pkg-config --libs boost)\
-										$(shell pkg-config --libs libndn-cxx)
+LIBSCXX =-std=c++11 $(shell pkg-config --libs libndn-cxx)\
+										-L/usr/local/lib -lbluetooth
 
 
 all: destroy_bin create_bin $(TARGETS)
@@ -77,5 +77,5 @@ create_bin:
 	mkdir bin
 
 ndnbt_cmd: ndnbt_cmd.cxx client/agent.o client/gatt.o client/display.o monitor/uuid.o bin/cmd_emulate.o
-	$(CXX) $(CCOPTS) $(INCXX) $(INC) -o $@ $< $(DEP_OBJECT) $(LIBS) $(LIBSCXX)
+	$(CXX) $(CCOPTS) $(INCXX) $(INC) -o $@ $< ./endpoints/producer.cpp $(DEP_OBJECT) $(LIBS) $(LIBSCXX)
 	mv $@ ./bin
