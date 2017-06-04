@@ -77,5 +77,5 @@ create_bin:
 	mkdir bin
 
 ndnbt_cmd: ndnbt_cmd.cxx client/agent.o client/gatt.o client/display.o monitor/uuid.o bin/cmd_emulate.o
-	$(CXX) $(CCOPTS) $(INCXX) $(INC) -o $@ $< ./endpoints/producer.cpp $(DEP_OBJECT) $(LIBS) $(LIBSCXX)
+	$(CXX) $(CCOPTS) $(INCXX) $(INC) -o $@ $< ./endpoints/producer.cpp core/scheduler.cpp core/global-io.cpp $(DEP_OBJECT) $(LIBS) $(LIBSCXX)
 	mv $@ ./bin

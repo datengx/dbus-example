@@ -54,9 +54,48 @@ Producer::Producer(const Name& prefix,
     m_prefix = prefix;
     m_versionedPrefix = Name(m_prefix).appendVersion();
   }
-  std::cout << "Start populating store" << std::endl;
-  // populateStore(is);
-  std::cout << "Stop populating store" << std::endl;
+  // std::cout << "Start populating store" << std::endl;
+  //populateStoreFromStr();
+  // std::cout << "Stop populating store" << std::endl;
+  if (needToPrintVersion)
+    std::cout << m_versionedPrefix[-1] << std::endl;
+
+  m_face.setInterestFilter(m_prefix,
+                           bind(&Producer::onInterest, this, _2),
+                           RegisterPrefixSuccessCallback(),
+                           bind(&Producer::onRegisterFailed, this, _1, _2));
+
+  if (m_isVerbose)
+    std::cout << "Data published with name: " << m_versionedPrefix << std::endl;
+}
+
+Producer::Producer(const Name& prefix,
+                   Face& face,
+                   KeyChain& keyChain,
+                   const security::SigningInfo& signingInfo,
+                   time::milliseconds freshnessPeriod,
+                   size_t maxSegmentSize,
+                   bool isVerbose,
+                   bool needToPrintVersion,
+                   std::string& input)
+  : m_face(face)
+  , m_keyChain(keyChain)
+  , m_signingInfo(signingInfo)
+  , m_freshnessPeriod(freshnessPeriod)
+  , m_maxSegmentSize(maxSegmentSize)
+  , m_isVerbose(isVerbose)
+{
+  if (prefix.size() > 0 && prefix[-1].isVersion()) {
+    m_prefix = prefix.getPrefix(-1);
+    m_versionedPrefix = prefix;
+  }
+  else {
+    m_prefix = prefix;
+    m_versionedPrefix = Name(m_prefix).appendVersion();
+  }
+  // std::cout << "Start populating store" << std::endl;
+  populateStoreFromStr(input);
+  // std::cout << "Stop populating store" << std::endl;
   if (needToPrintVersion)
     std::cout << m_versionedPrefix[-1] << std::endl;
 
@@ -72,13 +111,17 @@ Producer::Producer(const Name& prefix,
 void
 Producer::run()
 {
+  std::cout << __FUNCTION__ << " Start running indefinitely" << std::endl;
   m_face.processEvents();
+  std::cout << __FUNCTION__ << " Stop running indefinitely" << std::endl;
 }
 
 void
 Producer::run(const time::milliseconds& timeout = time::milliseconds::zero())
 {
+  std::cout << __FUNCTION__ << " Start running" << std::endl;
   m_face.processEvents(timeout);
+  std::cout << __FUNCTION__ << " Stop running" << std::endl;
 }
 
 void
@@ -112,6 +155,8 @@ Producer::onInterest(const Interest& interest)
 
     m_face.put(*data);
   }
+  // Shut down after providing something
+  m_face.shutdown();
 }
 
 void
@@ -125,6 +170,46 @@ Producer::populateStore(std::istream& is)
   std::vector<uint8_t> buffer(m_maxSegmentSize);
   while (is.good()) {
     is.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
+    const auto nCharsRead = is.gcount();
+    if (nCharsRead > 0) {
+      auto data = make_shared<Data>(Name(m_versionedPrefix).appendSegment(m_store.size()));
+      data->setFreshnessPeriod(m_freshnessPeriod);
+      data->setContent(&buffer[0], nCharsRead);
+
+      m_store.push_back(data);
+    }
+  }
+
+  if (m_store.empty()) {
+    auto data = make_shared<Data>(Name(m_versionedPrefix).appendSegment(0));
+    data->setFreshnessPeriod(m_freshnessPeriod);
+    m_store.push_back(data);
+  }
+
+  auto finalBlockId = name::Component::fromSegment(m_store.size() - 1);
+  for (const auto& data : m_store) {
+    data->setFinalBlockId(finalBlockId);
+    m_keyChain.sign(*data, m_signingInfo);
+  }
+
+  if (m_isVerbose)
+    std::cerr << "Created " << m_store.size() << " chunks for prefix " << m_prefix << std::endl;
+}
+
+void
+Producer::populateStoreFromStr(std::string& input)
+{
+  BOOST_ASSERT(m_store.size() == 0);
+
+  if (m_isVerbose)
+    std::cerr << "Loading input ..." << std::endl;
+
+  std::istringstream is(input);
+  std::vector<uint8_t> buffer(m_maxSegmentSize);
+  while (is.good()) {
+    is.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
+    // Copy content from input to the buffer
+
     const auto nCharsRead = is.gcount();
     if (nCharsRead > 0) {
       auto data = make_shared<Data>(Name(m_versionedPrefix).appendSegment(m_store.size()));

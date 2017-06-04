@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <signal.h>
 #include <sys/signalfd.h>
+#include <wordexp.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <glib.h>
@@ -21,15 +22,19 @@
 #define COLORED_CHG	"CHG"
 #define COLORED_DEL	"DEL"
 
-#define PROMPT_ON	"[Test readline]# "
-#define PROMPT_OFF	"[Test readline]# "
+#define PROMPT_ON	"[ndnblue]# "
+#define PROMPT_OFF	"[ndnblue]# "
+
+#define VERSION "0.10"
 
 GMainLoop *main_loop;
 DBusConnection *dbus_conn;
 guint input;
 GDBusProxy *agent_manager;
 
+void bt_handler(char *input);
 void rl_handler(char *in);
+char **cmd_completion(const char *text, int start, int end);
 gboolean service_is_child(GDBusProxy *service);
 gboolean device_is_child(GDBusProxy *device, GDBusProxy *master);
 void print_iter(const char *label, const char *name,
@@ -55,5 +60,6 @@ void property_changed(GDBusProxy *proxy, const char *name,
 					DBusMessageIter *iter, void *user_data);
 char **character_name_completion(const char *, int, int);
 char *character_name_generator(const char *, int);
+void resource_release();
 
 #endif

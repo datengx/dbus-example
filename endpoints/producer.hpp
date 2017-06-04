@@ -29,6 +29,7 @@
 #define NDN_TOOLS_CHUNKS_PUTCHUNKS_PRODUCER_HPP
 
 #include "../core/common.hpp"
+#include <sstream>
 
 namespace ndn {
 namespace chunks {
@@ -54,6 +55,16 @@ public:
            size_t maxSegmentSize, bool isVerbose = false, bool needToPrintVersion = false,
            std::istream& is = std::cin);
 
+  Producer(const Name& prefix,
+           Face& face,
+           KeyChain& keyChain,
+           const security::SigningInfo& signingInfo,
+           time::milliseconds freshnessPeriod,
+           size_t maxSegmentSize,
+           bool isVerbose,
+           bool needToPrintVersion,
+           std::string& input);
+
   /**
    * @brief Run the Producer
    */
@@ -63,7 +74,7 @@ public:
 
   void
   run(const time::milliseconds& timeout);
-  
+
 private:
   void
   onInterest(const Interest& interest);
@@ -80,6 +91,9 @@ private:
    */
   void
   populateStore(std::istream& is);
+
+  void
+  populateStoreFromStr(std::string& input);
 
   void
   onRegisterFailed(const Name& prefix, const std::string& reason);

@@ -48,6 +48,9 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <memory>
+#include <chrono>
+#include <thread>
 
 #include <boost/asio.hpp>
 #include <boost/assert.hpp>
@@ -80,5 +83,41 @@ namespace scheduler = util::scheduler;
 
 
 } // namespace ndn
+
+
+namespace nfd {
+
+using std::size_t;
+
+using boost::noncopyable;
+
+using std::shared_ptr;
+using std::unique_ptr;
+using std::weak_ptr;
+using std::make_shared;
+using ndn::make_unique;
+using std::enable_shared_from_this;
+
+using std::static_pointer_cast;
+using std::dynamic_pointer_cast;
+using std::const_pointer_cast;
+
+using std::function;
+using std::bind;
+using std::ref;
+using std::cref;
+
+using ndn::to_string;
+
+using ndn::Interest;
+using ndn::Data;
+using ndn::Name;
+using ndn::PartialName;
+using ndn::Exclude;
+using ndn::Link;
+using ndn::Block;
+
+
+} // namespace nfd
 
 #endif // NDN_TOOLS_CORE_COMMON_HPP

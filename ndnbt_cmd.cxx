@@ -4,6 +4,9 @@ extern "C" {
 }
 
 #include "endpoints/producer.hpp"
+#include "core/scheduler.hpp"
+#include "core/common.hpp"
+#include <unistd.h>
 
 extern GMainLoop *main_loop;
 extern DBusConnection *dbus_conn;
@@ -22,6 +25,21 @@ void WorkerThread( boost::shared_ptr< ndn::chunks::Producer > producer )
 	std::cout << "Thread Finish\n";
 }
 */
+
+std::shared_ptr<std::thread> producer_thread;
+
+void
+launch_thread(std::shared_ptr<ndn::chunks::Producer> producer)
+{
+  std::cout << "schedule event" << std::endl;
+  //nfd::scheduler::schedule(ndn::time::seconds(0),
+  //                      std::bind((void(ndn::chunks::Producer::*)(const ndn::time::milliseconds&))&ndn::chunks::Producer::run, &*producer, ndn::time::milliseconds(1000)));
+  producer->run(ndn::time::milliseconds(100));
+  std::cout << "after schedule event" << std::endl;
+}
+
+
+
 /**
  * Start the producer
  */
@@ -33,8 +51,10 @@ run_producer()
   uint64_t freshnessPeriod = 10000;
   size_t maxChunkSize = ndn::MAX_NDN_PACKET_SIZE >> 1;
   std::string signingStr;
-  bool isVerbose = false;
-  std::string prefix = "/ndn/hi";
+  bool isVerbose = true;
+  // Check validity of the prefix
+  // TODO: !!
+  std::string prefix = "/localhop/bluetooth";
 
   ndn::security::SigningInfo signingInfo;
   try {
@@ -50,14 +70,20 @@ run_producer()
   try {
     ndn::Face face;
     ndn::KeyChain keyChain;
-
-    ndn::chunks::Producer producer(prefix, face, keyChain, signingInfo, ndn::time::milliseconds(freshnessPeriod),
-                                   maxChunkSize, isVerbose, printVersion, std::cin);
-    std::cout << "Yeah! run that producer!" << std::endl;
+    std::string input("Hello World!\n");
+    std::shared_ptr<ndn::chunks::Producer> producer = std::make_shared<ndn::chunks::Producer>(prefix, face, keyChain, signingInfo, ndn::time::milliseconds(freshnessPeriod),
+                                   maxChunkSize, isVerbose, printVersion, input);
     // producer.run(ndn::time::milliseconds(-1));
     //worker_threads.create_thread( boost::bind( &WorkerThread, producer ) );
-    producer.run(ndn::time::milliseconds(1000));
-    std::cout << "Producer stopped" << std::endl;
+
+    //producer->run(ndn::time::milliseconds(1000));
+    //nfd::scheduler::schedule(ndn::time::seconds(1),
+    //                    std::bind((void(ndn::chunks::Producer::*)(const ndn::time::milliseconds&))&ndn::chunks::Producer::run, &*producer, ndn::time::milliseconds(1000)));
+    //boost::thread_group;
+    //producer_thread = std::make_shared<std::thread>(launch_thread, producer);
+    //producer_thread->detach();
+    // producer->run(ndn::time::milliseconds(100));
+    producer->run();
   }
   catch (const std::exception& e) {
     std::cerr << "ERROR: " << e.what() << std::endl;
@@ -81,13 +107,15 @@ rl_handler(char *in)
     exit(-2);
   }
 
-
-  // Add the code for ndn
+  // Initialize producer
   if (strcmp(in, g_signals[CMDLINE_SIG_RUN_PRODUCER]) == 0) {
 
     err = run_producer();
     std::cout << "run_producer Error: " << err << std::endl;
   }
+
+  // Using bluetoothctl command handler
+  bt_handler(in);
 
 }
 
@@ -108,7 +136,7 @@ main(int argc, char *argv[])
 
     // each time TAB key is hit, the function assigned to
     // rl_attempted_completion_function will be called
-    rl_attempted_completion_function = character_name_completion;
+    rl_attempted_completion_function = cmd_completion;
 
     // @@ using callback behavior
     rl_erase_empty_line = 1;
@@ -142,6 +170,7 @@ main(int argc, char *argv[])
 
     g_main_loop_unref(main_loop);
 
+    resource_release();
     return 0;
 
 }
