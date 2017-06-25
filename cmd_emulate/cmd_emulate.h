@@ -31,6 +31,7 @@ GMainLoop *main_loop;
 DBusConnection *dbus_conn;
 guint input;
 GDBusProxy *agent_manager;
+GList *dev_list;
 
 void bt_handler(char *input);
 void rl_handler(char *in);

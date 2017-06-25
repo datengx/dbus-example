@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 #include <string>
 #include <array>
 extern "C" {
@@ -12,11 +13,13 @@ extern "C" {
 #include "core/scheduler.hpp"
 #include "core/common.hpp"
 #include <unistd.h>
+#include <boost/regex.hpp>
 
 extern GMainLoop *main_loop;
 extern DBusConnection *dbus_conn;
 extern guint input;
 extern GDBusProxy *agent_manager;
+extern GList *dev_list;
 
 const char* g_signals[] = {
   "quit",
@@ -109,12 +112,46 @@ std::string exec(const char* cmd) {
     return result;
 }
 
+std::string addr_replace(int idx)
+{
+	GList *list;
+  std::string result("");
+  // Indexing the devices
+  int i = 0;
+	for (list = g_list_first(dev_list); list; list = g_list_next(list)) {
+    if (idx == i) {
+      GDBusProxy *proxy = list->data;
+
+      DBusMessageIter iter;
+    	const char *address;
+
+    	if (g_dbus_proxy_get_property(proxy, "Address", &iter) == FALSE)
+    		result;
+
+    	dbus_message_iter_get_basic(&iter, &address);
+      result = std::string(address);
+    	return result;
+    }
+    i++;
+	}
+}
+
 /**
  *  Input handler function for the interactive shell
  */
 void
 rl_handler(char *in)
 {
+  if (!strlen(in)) {
+    // if nothing entered, skip it
+
+    rl_on_new_line();
+
+    rl_redisplay();
+
+    std::cout << std::endl;
+    return;
+  }
   printf("command: %s\n", in);
   int err = 0;
   char* in_orig;
@@ -135,29 +172,81 @@ rl_handler(char *in)
 
   add_history(in);
 
-  char *cmd, *arg;
-  cmd = strtok_r(in, " ", &arg);
+  std::vector<std::string> arg_list;
+  char *cmd;
+  while((cmd = strtok_r(in, " ", &in))) {
+    arg_list.push_back(std::string(cmd));
+  }
 
-  if (!cmd)
-    return;
 
-  if (arg) {
-		int len = strlen(arg);
-		if (len > 0 && arg[len - 1] == ' ')
-			arg[len - 1] = '\0';
-	}
+
 
   // std::cout << "cmd: " << cmd << std::endl;
   // std::cout << "arg: " << arg << std::endl;
 
-
-  if (strcmp(cmd, "face") == 0) {
+  std::string scheme;
+  if (strcmp(arg_list[0].c_str(), "face") == 0) {
     std::string nfdc_out;
-    std::string nfdc_exec("nfdc ");
-    std::string nfdc_arg1(cmd);
-    std::string nfdc_arg2(arg);
-    std::string arg_list = nfdc_arg1 + " " + nfdc_arg2;
-    std::string nfdc_cmd = nfdc_exec + arg_list;
+    std::string nfdc_exec("nfdc");
+    std::string nfdc_cmd = nfdc_exec;
+
+
+    // syntax suger
+    if (strcmp(arg_list[1].c_str(), "create") == 0) {
+      //
+      static const boost::regex protocolExp("(\\w+\\d?(\\+\\w+)?)://([^/]*)(\\/[^?]*)?");
+      // String match
+      boost::smatch protocolMatch;
+      if (!boost::regex_match(arg_list[2], protocolMatch, protocolExp)) {
+        std::cerr << "Error: NFDC command syntax error." << std::endl;
+        return;
+      }
+
+      scheme = protocolMatch[1];
+      std::cout << "scheme: " << scheme << std::endl;
+      const std::string& authority = protocolMatch[3];
+
+      // pattern for Bluetooth address in standard hex-digits-and-colons notation
+      static const boost::regex btExp("^\\[#(\\d+)\\](\\d+)$");
+
+      if (scheme == "bluetooth") {
+        boost::smatch match;
+        std::string addr;
+        std::string channel;
+        // Check if there is address substitution request
+        bool isRep = boost::regex_match(authority, match, btExp);
+        // is bluetooth scheme
+        if (isRep) {
+          addr = match[1];
+          channel = match[2];
+          // std::cout << "addr: " << addr << std::endl;
+          // std::cout << "channel: " << channel << std::endl;
+          addr = addr_replace(std::stoi(addr));
+          std::cout << "addr(after replacement): " << addr << std::endl;
+          arg_list[2] = std::string("bluetooth://[") + addr + std::string("]") + channel;
+        }
+      } else {
+        std::cerr << "Error: only support bluetooth face creation" << std::endl;
+        return;
+      }
+    }
+
+    for (int i = 0; i < arg_list.size(); i++) {
+      nfdc_cmd = nfdc_cmd + " " + arg_list[i];
+    }
+
+    nfdc_out = exec(nfdc_cmd.c_str());
+    std::cout << nfdc_out << std::endl;
+    return;
+  } else if (strcmp(arg_list[0].c_str(), "route") == 0) {
+    std::string nfdc_out;
+
+    std::string nfdc_exec("nfdc");
+    std::string nfdc_cmd = nfdc_exec;
+    for (int i = 0; i < arg_list.size(); i++) {
+      nfdc_cmd = nfdc_cmd + " " + arg_list[i];
+    }
+
     nfdc_out = exec(nfdc_cmd.c_str());
     std::cout << nfdc_out << std::endl;
     return;

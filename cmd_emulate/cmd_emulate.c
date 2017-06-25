@@ -4,7 +4,7 @@ static GDBusProxy *default_ctrl;
 static GDBusProxy *default_dev;
 static GDBusProxy *default_attr;
 static GList *ctrl_list;
-static GList *dev_list;
+
 
 static char *auto_register_agent = NULL;
 
@@ -231,10 +231,13 @@ static void cmd_select(const char *arg)
 static void cmd_devices(const char *arg)
 {
 	GList *list;
-
+  // Indexing the devices
+  int i = 0;
 	for (list = g_list_first(dev_list); list; list = g_list_next(list)) {
+    rl_printf("BT dev #%d: ", i);
 		GDBusProxy *proxy = list->data;
 		print_device(proxy, NULL);
+    i++;
 	}
 }
 
