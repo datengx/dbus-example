@@ -18,9 +18,9 @@
 #include "signal-def.h"
 
 /* String display constants */
-#define COLORED_NEW	"NEW"
-#define COLORED_CHG	"CHG"
-#define COLORED_DEL	"DEL"
+#define COLORED_NEW	COLOR_GREEN "NEW" COLOR_OFF
+#define COLORED_CHG	COLOR_YELLOW "CHG" COLOR_OFF
+#define COLORED_DEL	COLOR_RED "DEL" COLOR_OFF
 
 #define PROMPT_ON	"[ndnblue]# "
 #define PROMPT_OFF	"[ndnblue]# "

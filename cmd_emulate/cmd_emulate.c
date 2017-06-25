@@ -1,4 +1,5 @@
 #include "cmd_emulate/cmd_emulate.h"
+#include "client/display.h"
 
 static GDBusProxy *default_ctrl;
 static GDBusProxy *default_dev;

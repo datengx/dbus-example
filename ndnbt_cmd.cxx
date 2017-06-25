@@ -46,8 +46,6 @@ launch_thread(std::shared_ptr<ndn::chunks::Producer> producer)
   std::cout << "after schedule event" << std::endl;
 }
 
-
-
 /**
  * Start the producer
  */
@@ -136,7 +134,7 @@ std::string addr_replace(int idx)
 	}
 }
 
-/**
+/****
  *  Input handler function for the interactive shell
  */
 void
@@ -172,6 +170,7 @@ rl_handler(char *in)
 
   add_history(in);
 
+  /* Store argument in a list (std container) */
   std::vector<std::string> arg_list;
   char *cmd;
   while((cmd = strtok_r(in, " ", &in))) {
@@ -179,10 +178,6 @@ rl_handler(char *in)
   }
 
 
-
-
-  // std::cout << "cmd: " << cmd << std::endl;
-  // std::cout << "arg: " << arg << std::endl;
 
   std::string scheme;
   if (strcmp(arg_list[0].c_str(), "face") == 0) {
@@ -261,6 +256,10 @@ namespace ndn {
 namespace chunks {
 }
 }
+
+
+
+
 int
 main(int argc, char *argv[])
 {
